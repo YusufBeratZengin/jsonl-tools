@@ -1,0 +1,18 @@
+{"ts":"2026-03-01T10:00:14Z","level":"INFO","service":"scheduler","msg":"cache warmed","latency_ms":12}
+{"ts":"2026-03-01T10:01:37Z","level":"ERROR","service":"worker","msg":"connection reset by peer","latency_ms":3000}
+{"ts":"2026-03-01T10:02:35Z","level":"INFO","service":"api","msg":"job finished","latency_ms":1200}
+{"ts":"2026-03-01T10:03:34Z","level":"INFO","service":"api","msg":"cache warmed","latency_ms":95}
+{"ts":"2026-03-01T10:04:52Z","level":"ERROR","service":"scheduler","msg":"connection reset by peer","latency_ms":3000}
+{"ts":"2026-03-01T10:05:36Z","level":"ERROR","service":"scheduler","msg":"connection reset by peer","latency_ms":30000}
+{"ts":"2026-03-01T10:06:35Z","level":"INFO","service":"scheduler","msg":"request served","latency_ms":12}
+{"ts":"2026-03-01T10:07:13Z","level":"ERROR","service":"worker","msg":"disk quota exceeded","latency_ms":30000}
+{"ts":"2026-03-01T10:08:29Z","level":"INFO","service":"scheduler","msg":"job finished","latency_ms":310}
+{"ts":"2026-03-01T10:09:15Z","level":"INFO","service":"api","msg":"cache warmed","latency_ms":40}
+{"ts":"2026-03-01T10:10:36Z","level":"INFO","service":"worker","msg":"cache warmed","latency_ms":2450}
+{"ts":"2026-03-01T10:11:46Z","level":"INFO","service":"worker","msg":"job finished","latency_ms":18}
+{"ts":"2026-03-01T10:12:32Z","level":"INFO","service":"worker","msg":"request served","latency_ms":310}
+{"ts":"2026-03-01T10:13:59Z","level":"INFO","service":"worker","msg":"job finished","latency_ms":12}
+{"ts":"2026-03-01T10:14:48Z","level":"INFO","service":"scheduler","msg":"cache warmed","latency_ms":310}
+{"ts":"2026-03-01T10:15:44Z","level":"INFO","service":"worker","msg":"cache warmed","latency_ms":2450}
+{"ts":"2026-03-01T10:16:51Z","level":"ERROR","service":"worker","msg":"connection reset by peer","latency_ms":3000}
+{"ts":"2026-03-01T10:17:30Z","level":"INFO","service":"scheduler","msg":"cache warmed","latency_ms":18}
