@@ -1,0 +1,39 @@
+name: Bug report
+description: Report wrong output, a crash, or a performance problem using synthetic data only.
+title: "bug: "
+labels: [bug]
+body:
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Before reporting
+      options:
+        - label: I searched existing issues and removed all personal data and credentials from my example.
+          required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: jsonl-tools version, Python version, operating system.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: The exact command and a few synthetic input lines.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result and logs
+    validations:
+      required: true
