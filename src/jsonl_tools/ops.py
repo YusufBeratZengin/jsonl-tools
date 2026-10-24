@@ -1,4 +1,4 @@
-"""Streaming operations. Everything here is a generator or keeps bounded state."""
+"""Streaming operations; deduplication stores one digest per unique key."""
 
 from __future__ import annotations
 
@@ -57,8 +57,9 @@ def tail_file(f: BinaryIO, n: int) -> list[bytes]:
     if pos > 0 and pieces:
         pieces = pieces[1:]  # drop the possibly partial first line
     out = [p for p in pieces if p]
-    if pos == 0 and out and out[0].startswith(b"\xef\xbb\xbf"):
-        out[0] = out[0][3:]
+    if pos == 0 and pieces and pieces[0].startswith(b"\xef\xbb\xbf"):
+        pieces[0] = pieces[0][3:].strip()
+        out = [p for p in pieces if p]
     return out[-n:]
 
 
@@ -156,7 +157,7 @@ def dedupe_lines(lines: Lines, *, canonical: bool = False) -> Iterator[bytes]:
                 key = json.dumps(
                     json.loads(raw), sort_keys=True, separators=(",", ":"), ensure_ascii=True
                 ).encode("ascii")
-            except ValueError:
+            except (ValueError, RecursionError):
                 key = raw
         else:
             key = raw
@@ -178,7 +179,9 @@ def dedupe_by(records: Records, fields: Sequence[Path]) -> Iterator[bytes]:
             found = get_value(value, path)
             key.append([0] if found is MISSING else [1, found])
         h = _digest(
-            json.dumps(key, sort_keys=True, separators=(",", ":")).encode("utf-8", "replace")
+            json.dumps(key, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode(
+                "ascii"
+            )
         )
         if h not in seen:
             seen.add(h)
@@ -196,7 +199,10 @@ def parse_size(text: str) -> int:
     m = _SIZE.match(text)
     if m is None:
         raise JsonlError(f"invalid size {text!r}; examples: 500k, 64MB, 1G")
-    size = int(float(m[1]) * _UNITS[m[2].lower()])
+    try:
+        size = int(float(m[1]) * _UNITS[m[2].lower()])
+    except (ValueError, OverflowError):
+        raise JsonlError("size is outside the supported range") from None
     if size <= 0:
         raise JsonlError("size must be positive")
     return size
@@ -217,6 +223,8 @@ def split_lines(
     """
     if (max_lines is None) == (max_bytes is None):
         raise JsonlError("give exactly one of max_lines or max_bytes")
+    if (max_lines is not None and max_lines <= 0) or (max_bytes is not None and max_bytes <= 0):
+        raise JsonlError("split limits must be positive")
     part = 0
     out: BinaryIO | None = None
     n_lines = 0

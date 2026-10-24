@@ -1,0 +1,22 @@
+$ jsonl-tools count examples/chat.jsonl
+12
+
+$ jsonl-tools filter examples/app.log.jsonl level==ERROR --count
+5
+
+$ jsonl-tools select examples/chat.jsonl id tokens=usage.tokens
+{"id":"ex-001","tokens":41}
+{"id":"ex-002","tokens":40}
+{"id":"ex-003","tokens":1150}
+{"id":"ex-004","tokens":41}
+{"id":"ex-005","tokens":52}
+{"id":"ex-006","tokens":57}
+{"id":"ex-007","tokens":19}
+{"id":"ex-008","tokens":65}
+{"id":"ex-009","tokens":31}
+{"id":"ex-010","tokens":52}
+{"id":"ex-011","tokens":1142}
+{"id":"ex-012","tokens":100}
+
+$ jsonl-tools validate examples/chat.jsonl
+12 line(s): 12 valid, 0 invalid

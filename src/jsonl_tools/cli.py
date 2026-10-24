@@ -12,6 +12,7 @@ import json
 import os
 import random
 import sys
+import zlib
 from collections.abc import Callable, Iterator, Sequence
 from pathlib import Path
 from typing import Any, BinaryIO, TextIO
@@ -40,9 +41,12 @@ class _Ctx:
         self.stdout = stdout
         self.stderr = stderr
         self.skipped: list[int] = []
+        self.skipped_count = 0
 
     def note_bad(self, lineno: int, _message: str) -> None:
-        self.skipped.append(lineno)
+        self.skipped_count += 1
+        if len(self.skipped) < 5:
+            self.skipped.append(lineno)
 
     def records(self, f: BinaryIO, args: argparse.Namespace) -> Iterator[tuple[int, bytes, Any]]:
         return iter_records(
@@ -55,9 +59,9 @@ class _Ctx:
     def report_skipped(self) -> None:
         if self.skipped:
             first = ", ".join(str(n) for n in self.skipped[:5])
-            more = ", ..." if len(self.skipped) > 5 else ""
+            more = ", ..." if self.skipped_count > 5 else ""
             print(
-                f"jsonl-tools: skipped {len(self.skipped)} bad line(s) (first: {first}{more})",
+                f"jsonl-tools: skipped {self.skipped_count} bad line(s) (first: {first}{more})",
                 file=self.stderr,
             )
 
@@ -171,10 +175,11 @@ def _cmd_split(ctx: _Ctx, args: argparse.Namespace) -> int:
     def open_part(i: int) -> BinaryIO:
         path = out_dir / f"{prefix}-{i:04d}{suffix}"
         created.append(path.as_posix())
-        raw = open(path, "wb")  # noqa: SIM115 - closed by split_lines
+        if path.exists() and args.file != "-" and path.samefile(args.file):
+            raise JsonlError("split output would overwrite the input")
         if args.gzip:
-            return gzip.GzipFile(filename="", fileobj=raw, mode="wb", mtime=0)  # type: ignore[return-value]
-        return raw
+            return gzip.GzipFile(filename=path, mode="wb", mtime=0)  # type: ignore[return-value]
+        return open(path, "wb")  # closed by split_lines
 
     with open_input(args.file, ctx.stdin) as f:
         ops.split_lines(iter_lines(f), open_part, max_lines=args.lines, max_bytes=max_bytes)
@@ -313,7 +318,7 @@ def _bad_arg(p: argparse.ArgumentParser) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="jsonl-tools",
-        description="Streaming toolkit for large JSONL and .jsonl.gz files (constant memory).",
+        description="Streaming toolkit for large JSONL and .jsonl.gz files.",
         epilog="Field paths: a.b, a[0].b, a[].b ([] = every list element). Exit codes: "
         "0 ok, 1 validate found invalid lines, 2 error.",
     )
@@ -468,6 +473,7 @@ def main(
     ctx = _Ctx(stdin or sys.stdin.buffer, stdout or sys.stdout.buffer, stderr or sys.stderr)
     args = build_parser().parse_args(argv)
     try:
+        _check_outputs(args)
         code: int = args.func(ctx, args)
         ctx.stdout.flush()
         return code
@@ -475,9 +481,35 @@ def main(
         raise
     except (JsonlError, ExprError, PathError) as exc:
         print(f"jsonl-tools: error: {exc}", file=ctx.stderr)
-    except (OSError, EOFError, gzip.BadGzipFile) as exc:
+    except (OSError, EOFError, zlib.error) as exc:
         print(f"jsonl-tools: error: {exc}", file=ctx.stderr)
     return 2
+
+
+def _check_outputs(args: argparse.Namespace) -> None:
+    """Reject destructive aliases and invalid limits before opening output files."""
+    source = Path(args.file) if args.file != "-" else None
+    for name in ("output", "clean"):
+        target = getattr(args, name, None)
+        if source is not None and target is not None and target != "-":
+            output = Path(target)
+            if output.resolve() == source.resolve() or (
+                output.exists() and source.exists() and output.samefile(source)
+            ):
+                raise JsonlError("input and output must be different files")
+    for name in ("n", "top", "max_depth", "limit"):
+        value = getattr(args, name, None)
+        if value is not None and value < 0:
+            raise JsonlError(f"{name.replace('_', '-')} must be non-negative")
+    for name in ("max_paths", "max_props"):
+        value = getattr(args, name, None)
+        if value is not None and value <= 0:
+            raise JsonlError(f"{name.replace('_', '-')} must be positive")
+    prefix = getattr(args, "prefix", None)
+    if prefix is not None and (
+        prefix in ("", ".", "..") or any(char in prefix for char in "/\\:")
+    ):
+        raise JsonlError("--prefix must be a file name, without directory separators")
 
 
 def run() -> None:  # pragma: no cover - thin process wrapper

@@ -35,7 +35,8 @@ def percentile(sorted_values: list[float], q: float) -> float:
     k = (len(sorted_values) - 1) * q
     lo = math.floor(k)
     hi = min(lo + 1, len(sorted_values) - 1)
-    return sorted_values[lo] + (sorted_values[hi] - sorted_values[lo]) * (k - lo)
+    weight = k - lo
+    return sorted_values[lo] * (1 - weight) + sorted_values[hi] * weight
 
 
 class FrequentValues:
@@ -78,7 +79,7 @@ class PathStats:
         self.num_count = 0
         self.num_min = math.inf
         self.num_max = -math.inf
-        self.num_sum = 0.0
+        self.num_mean = 0.0
         self.sample: list[float] = []
         self.str_count = 0
         self.str_min = 0
@@ -94,10 +95,15 @@ class PathStats:
         t = type_name(value)
         self.types[t] = self.types.get(t, 0) + 1
         if t == "integer" or t == "number":
-            x = float(value)
+            try:
+                x = float(value)
+            except OverflowError:
+                x = math.inf
             if math.isfinite(x):
                 self.num_count += 1
-                self.num_sum += x
+                self.num_mean = (
+                    self.num_mean * ((self.num_count - 1) / self.num_count) + x / self.num_count
+                )
                 self.num_min = min(self.num_min, x)
                 self.num_max = max(self.num_max, x)
                 if len(self.sample) < RESERVOIR_SIZE:
@@ -135,7 +141,7 @@ class PathStats:
                 "count": self.num_count,
                 "min": _tidy(self.num_min),
                 "max": _tidy(self.num_max),
-                "mean": _tidy(self.num_sum / self.num_count),
+                "mean": _tidy(self.num_mean),
                 "p50": _tidy(percentile(ordered, 0.50)),
                 "p95": _tidy(percentile(ordered, 0.95)),
                 "percentiles_exact": self.num_count <= RESERVOIR_SIZE,

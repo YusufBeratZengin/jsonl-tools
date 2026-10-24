@@ -26,6 +26,7 @@ jobs:
       - run: ruff check .
       - run: mypy src
       - run: pytest -q --cov=jsonl_tools --cov-fail-under=85
+      - run: python scripts/make-demo.py --check
   build:
     runs-on: ubuntu-latest
     steps:

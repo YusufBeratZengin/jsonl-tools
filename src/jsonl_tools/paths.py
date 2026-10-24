@@ -39,6 +39,8 @@ def parse_path(text: str) -> Path:
         if m["key"]:
             segments.append(m["key"])
         for idx in _INDEX.findall(m["idx"]):
+            if idx == "-":
+                raise PathError(f"invalid field path {text!r}")
             segments.append(int(idx) if idx else None)
     return tuple(segments)
 
