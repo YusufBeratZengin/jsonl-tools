@@ -54,7 +54,7 @@ class _Ctx:
         )
 
     def text(self, s: str) -> None:
-        self.stdout.write(s.encode("utf-8"))
+        self.stdout.write(s.encode("utf-8", errors="backslashreplace"))
 
     def report_skipped(self) -> None:
         if self.skipped:

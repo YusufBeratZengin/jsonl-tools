@@ -33,6 +33,20 @@ def _is_number(v: Any) -> bool:
 def _equal(a: Any, b: Any) -> bool:
     if isinstance(a, bool) or isinstance(b, bool):
         return isinstance(a, bool) and isinstance(b, bool) and a == b
+    if isinstance(a, list) or isinstance(b, list):
+        return (
+            isinstance(a, list)
+            and isinstance(b, list)
+            and len(a) == len(b)
+            and all(_equal(x, y) for x, y in zip(a, b, strict=True))
+        )
+    if isinstance(a, dict) or isinstance(b, dict):
+        return (
+            isinstance(a, dict)
+            and isinstance(b, dict)
+            and a.keys() == b.keys()
+            and all(_equal(a[key], b[key]) for key in a)
+        )
     return bool(a == b)
 
 

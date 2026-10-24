@@ -10,6 +10,9 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Regression tests for streaming, invalid paths, numeric extremes and output safety.
 
 ### Fixed
+- Reject overflowing float literals as bad lines and forbid non-finite JSON serialization.
+- Escape lone Unicode surrogates in stats and schema reports.
+- Distinguish booleans from numbers recursively in filter lists and objects.
 - Reject input/output aliases before truncating files and invalid CLI limits early.
 - Bound skipped-line previews and close the raw file of each gzip split part.
 - Handle malformed negative indexes, BOM-only lines in tail and extreme numeric summaries.

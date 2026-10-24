@@ -134,7 +134,8 @@ girdi ve çıktı olarak kullanmak reddedilir.
 Girdi UTF-8'dir; başta BOM olabilir. Boş satırlar atlanır, çıktı LF kullanır.
 Ham işlemler satır çevresindeki boşluğu temizler, JSON biçimini korur; select
 kompakt JSON üretir. Ayrıştırılan işlemlerde her dolu satır tek JSON değeri
-içermelidir. `NaN` ve `Infinity` reddedilir. Normal dosyada tail sondan okur;
+içermelidir. `NaN`, `Infinity` ve float dönüşümünde sonsuzluğa taşan sayı
+ifadeleri reddedilir. Normal dosyada tail sondan okur;
 gzip ve stdin için son N satırı bellekte tutar.
 
 Stats varsayılan olarak 500 alan yolunu 12 derinliğe kadar izler; kök derinliği
@@ -152,7 +153,7 @@ dosyası adlarını tutar. Wildcard büyük dizileri genişletebilir. Regex zama
 aşımı yoktur; güvendiğiniz ifadeleri kullanın.
 
 Schema çıkarımı, hazır bir şemaya göre doğrulama yapmaz. Sayısal özetler kayan
-noktalıdır; sonlu float aralığını aşan değerler tür sayımına katılır, sayısal
+noktalıdır; sonlu float aralığını aşan tamsayılar tür sayımına katılır, sayısal
 özete katılmaz. Her JSON anahtarı yol sözdizimiyle adreslenemez. Hatalı bir işlem
 kısmi çıktı bırakabilir; yazma işlemleri atomik değildir.
 

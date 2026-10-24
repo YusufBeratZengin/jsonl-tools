@@ -5,6 +5,7 @@ from __future__ import annotations
 import gzip
 import io
 import json
+import math
 import sys
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
@@ -32,7 +33,14 @@ def _reject_constant(name: str) -> Any:
     raise ValueError(f"non-standard JSON constant {name}")
 
 
-_DECODER = json.JSONDecoder(parse_constant=_reject_constant)
+def _finite_float(text: str) -> float:
+    value = float(text)
+    if not math.isfinite(value):
+        raise ValueError("number outside finite float range")
+    return value
+
+
+_DECODER = json.JSONDecoder(parse_constant=_reject_constant, parse_float=_finite_float)
 
 
 def parse_line(raw: bytes) -> Any:
@@ -140,9 +148,13 @@ def iter_records(
 def dumps(value: Any) -> bytes:
     """Compact UTF-8 JSON, falling back to ASCII escapes for lone surrogates."""
     try:
-        return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        return json.dumps(value, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode(
+            "utf-8"
+        )
     except UnicodeEncodeError:
-        return json.dumps(value, ensure_ascii=True, separators=(",", ":")).encode("ascii")
+        return json.dumps(value, ensure_ascii=True, separators=(",", ":"), allow_nan=False).encode(
+            "ascii"
+        )
 
 
 def write_line(out: BinaryIO, raw: bytes) -> None:

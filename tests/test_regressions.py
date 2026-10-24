@@ -148,3 +148,58 @@ def test_canonical_dedupe_retains_unparseable_deep_lines(run):
     deep = b"[" * 2000 + b"]" * 2000
     code, out, _ = run("dedupe", "--canonical", stdin=deep + b"\n" + deep + b"\n")
     assert code == 0 and out == deep + b"\n"
+
+
+@pytest.mark.parametrize("number", ["1e400", "-1e400"])
+def test_overflowing_json_numbers_are_bad_lines(run, number):
+    data = ('{"x":' + number + '}\n{"x":2}\n').encode()
+    code, out, error = run("select", "-", "x", stdin=data)
+    assert code == 2 and not out and "line 1" in error
+    code, out, error = run("select", "-", "x", "--skip-bad", stdin=data)
+    assert code == 0 and out == b'{"x":2}\n' and "skipped 1" in error
+    code, out, error = run("validate", "--json", stdin=data)
+    report = json.loads(out)
+    assert code == 1 and not error
+    assert report["valid"] == 1 and report["invalid"] == 1
+    assert report["problems"][0]["line"] == 1
+
+
+@pytest.mark.parametrize("number", [float("inf"), float("-inf"), float("nan")])
+@pytest.mark.parametrize("text", ["normal", "\ud800"])
+def test_json_serialization_rejects_nonfinite_numbers(number, text):
+    with pytest.raises(ValueError):
+        dumps({"text": text, "x": number})
+
+
+@pytest.mark.parametrize("argv", [("stats", "--json"), ("stats",), ("schema",)])
+@pytest.mark.parametrize("record", [b'{"x":"\\ud800"}\n', b'{"\\ud800":1}\n'])
+def test_reports_escape_lone_surrogates(run, argv, record):
+    code, out, error = run(*argv, stdin=record)
+    assert code == 0 and not error
+    text = out.decode("utf-8")
+    if argv != ("stats",):
+        json.loads(text)
+    if argv == ("stats", "--json") or b'"x"' not in record:
+        assert "\\ud800" in text
+
+
+@pytest.mark.parametrize(
+    "actual,expected,equal",
+    [
+        ([True], [1], False),
+        ({"a": True}, {"a": 1}, False),
+        ([{"a": [False]}], [{"a": [0]}], False),
+        ([{"a": [True]}], [{"a": [True]}], True),
+        ([{"a": [1]}], [{"a": [1.0]}], True),
+        ([1], [1, 2], False),
+        ({"a": 1}, {"b": 1}, False),
+        ([], {}, False),
+    ],
+)
+def test_filter_nested_json_equality(run, actual, expected, equal):
+    for left, right in [(actual, expected), (expected, actual)]:
+        data = (json.dumps({"x": left}) + "\n").encode()
+        for operator, matches in [("==", equal), ("!=", not equal)]:
+            code, out, error = run("filter", "-", "x" + operator + json.dumps(right), stdin=data)
+            assert code == 0 and not error
+            assert out == (data if matches else b"")

@@ -133,7 +133,8 @@ Input is UTF-8, optionally starting with a BOM. Blank lines are ignored and
 output uses LF. Raw operations strip surrounding line whitespace and otherwise
 preserve JSON formatting; select serializes compact JSON. Each nonblank line
 must contain exactly one JSON value for parsed operations. `NaN` and `Infinity`
-are rejected. Plain-file tail reads backwards; gzip and stdin tail retain N lines.
+and floating-point literals that overflow to infinity are rejected. Plain-file
+tail reads backwards; gzip and stdin tail retain N lines.
 
 Stats tracks at most 500 paths to depth 12 (root depth 0), with a 4,096-value
 numeric reservoir and 1,000 frequent-value candidates per path. Percentiles and
@@ -150,7 +151,7 @@ hash-collision risk. Split retains output filenames. Wildcards can expand large 
 Regex execution has no timeout: use trusted patterns.
 
 Schema inference does not validate against an existing schema. Numeric summaries
-use floating point; values outside finite float range are counted by type but
+use floating point; integers outside finite float range are counted by type but
 excluded from numeric summaries. Path syntax does not address every JSON key.
 Failed transformations can leave partial output; writes are not atomic.
 
