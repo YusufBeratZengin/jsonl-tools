@@ -8,7 +8,7 @@ import json
 import sys
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, cast
 
 GZIP_MAGIC = b"\x1f\x8b"
 UTF8_BOM = b"\xef\xbb\xbf"
@@ -95,7 +95,7 @@ def open_output(path: str | None, stdout: BinaryIO | None = None) -> Iterator[Bi
     with open(path, "wb") as raw:
         if path.endswith(".gz"):
             gz = gzip.GzipFile(filename="", fileobj=raw, mode="wb", mtime=0)
-            writer = io.BufferedWriter(gz, BUFSIZE)  # type: ignore[arg-type]
+            writer = io.BufferedWriter(cast(io.RawIOBase, gz), BUFSIZE)
             try:
                 yield writer
             finally:
